@@ -11,7 +11,7 @@
         }
 
         //腾讯动漫android app 分享设置
-        if (window.location.href.indexOf('androidApp') !== -1) {
+        if (window.navigator.userAgent.indexOf('QQAC_Client_Android') >= 0) {
             var isNewVersion = function() {
                 var ret = prompt("isAppLogin");
                 return (ret && ret == "updatedVersion") ? true : false;
