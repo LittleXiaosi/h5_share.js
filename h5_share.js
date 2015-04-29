@@ -1,113 +1,117 @@
 /* 分享功能 */
-(function() {
-    setTimeout(function() {
+(function () {
+    var shareConfig = window.shareConfig || {
+            img_url: "http://q2.qlogo.cn/g?b=qq&k=PnQ8d2G4321anC3eN5seSw&s=160",    //分享的小图标地址
+            link: window.location.href,                                             //分享链接地址，常用window.location.href
+            title: document.title || '分享标题',                                    //分享的标题
+            desc: '分享详情',                                                       //分享的详情文案（PS: 在微信朋友圈分享只会显示标题，没有详情）
+            callback: 'onAppShare'                                                  //分享之后的成功的回调函数（PS: 在iOS QQ中不会调用）
+        };
 
-        var shareConfig = {
-            img_url: "#link('../tdimage/share.png')",               //分享的小图标地址
-            link: 'http://m.ac.qq.com/H5Event/AppQd/tDrotate',      //分享链接地址，常用window.location.href
-            title: '签到送海贼王限量手办',                            //分享的标题（ps：在微信朋友圈分享只会显示标题，没有详情）
-            desc: '海贼手办华丽登场，4.13一起来抢！',                  //分享的详情文案
-            callback: 'onAppShare'                                  //分享之后的成功的回调函数
+    window.onAppShare = window.onAppShare || function (ret) {
+        console.log('onAppShare: ' + ret);
+    };
+
+    var UA = window.navigator.userAgent;
+
+    //腾讯动漫Android APP分享配置
+    if (/(^| )QQAC_Client_Android( |\/|$)/i.test(UA)) {
+        var isNewVersion = function () {
+            var ret = prompt("isAppLogin");
+            return (ret && ret == "updatedVersion") ? true : false;
         }
-
-        //腾讯动漫android app 分享设置
-        if (window.navigator.userAgent.indexOf('QQAC_Client_Android') >= 0) {
-            var isNewVersion = function() {
-                var ret = prompt("isAppLogin");
-                return (ret && ret == "updatedVersion") ? true : false;
+        var _share = function () {
+            var jsonOld = {
+                "callback": shareConfig.callback ? shareConfig.callback : "",
+                "imgurl": shareConfig.img_url,
+                "title": shareConfig.title,
+                "content": shareConfig.desc,
+                "pageurl": shareConfig.link
             }
-            var _share = function() {
-                var jsonOld = {
-                    "callback": shareConfig.callback ? shareConfig.callback : "",
+
+            if (!isNewVersion()) {
+                prompt("appShare", JSON.stringify(jsonOld));
+                return;
+            }
+            var jsonNew = {
+                "interface": "appShare",
+                "callback": shareConfig.callback ? shareConfig.callback : "",
+                data: {
                     "imgurl": shareConfig.img_url,
                     "title": shareConfig.title,
                     "content": shareConfig.desc,
                     "pageurl": shareConfig.link
                 }
+            };
+            return prompt(JSON.stringify(jsonNew));
+        };
 
-                if (!isNewVersion()) {
-                    prompt("appShare", JSON.stringify(jsonOld));
-                    return;
-                }
-                var jsonNew = {
-                    "interface": "appShare",
-                    "callback": shareConfig.callback ? shareConfig.callback : "",
-                    data: {
-                        "imgurl": shareConfig.img_url,
-                        "title": shareConfig.title,
-                        "content": shareConfig.desc,
-                        "pageurl": shareConfig.link
-                    }
-                };
-                return prompt(JSON.stringify(jsonNew));
-            }
+        window.appShare = _share;
 
-            window.appShare = _share;
-
-        } else {
-            // 自定义微信分享内容
-            function initWxShare(shareContent) {
-                var _share = function() {
-                    try {
-                        // 分享到朋友圈
-                        WeixinJSBridge.on('menu:share:timeline', function(argv) {
-                            WeixinJSBridge.invoke('shareTimeline', shareContent, function(res) {
-                            });
+    } else if (/(^| )MicroMessenger( |\/|$)/i.test(UA)) {
+        // 自定义微信分享内容
+        function initWxShare(shareContent) {
+            var _share = function () {
+                try {
+                    // 分享到朋友圈
+                    WeixinJSBridge.on('menu:share:timeline', function (argv) {
+                        WeixinJSBridge.invoke('shareTimeline', shareContent, function (res) {
                         });
-                        // 发送给好友
-                        WeixinJSBridge.on('menu:share:appmessage', function(argv) {
-                            WeixinJSBridge.invoke('sendAppMessage', shareContent, function(res) {
-                            });
+                    });
+                    // 发送给好友
+                    WeixinJSBridge.on('menu:share:appmessage', function (argv) {
+                        WeixinJSBridge.invoke('sendAppMessage', shareContent, function (res) {
                         });
-                    } catch (e) {
-                        // do nothing
-                    }
-                }
-                if (typeof WeixinJSBridge == "object" && typeof WeixinJSBridge.invoke == "function") {
-                    _share();
-                } else {
-                    if (document.addEventListener) {
-                        document.addEventListener("WeixinJSBridgeReady", _share, false);
-                    } else if (document.attachEvent) {
-                        document.attachEvent("WeixinJSBridgeReady", _share);
-                        document.attachEvent("onWeixinJSBridgeReady", _share);
-                    }
+                    });
+                } catch (e) {
+                    // do nothing
                 }
             }
-
-            // 调用微信分享
-            initWxShare({
-                "img_url": shareConfig.img_url,
-                "img_width": 120,
-                "img_height": 120,
-                "link": shareConfig.link,
-                "desc": shareConfig.desc,
-                "title": shareConfig.title
-            });
-
-            //手Q分享：（ps：但是这种使用方式似乎没什么用）
-            var QQscript = document.createElement('script');
-            QQscript.setAttribute('type', 'text/javascript');
-            QQscript.src = 'http://pub.idqqimg.com/qqmobile/qqapi.js';
-            document.onload = function() {
-                document.body.appendChild(QQscript);
+            if (typeof WeixinJSBridge == "object" && typeof WeixinJSBridge.invoke == "function") {
+                _share();
+            } else {
+                if (document.addEventListener) {
+                    document.addEventListener("WeixinJSBridgeReady", _share, false);
+                } else if (document.attachEvent) {
+                    document.attachEvent("WeixinJSBridgeReady", _share);
+                    document.attachEvent("onWeixinJSBridgeReady", _share);
+                }
             }
-            QQscript.onload = function() {
-                window.mqq.data.setShareInfo({
+        }
+
+        // 微信分享配置
+        initWxShare({
+            "img_url": shareConfig.img_url,
+            "img_width": 120,
+            "img_height": 120,
+            "link": shareConfig.link,
+            "desc": shareConfig.desc,
+            "title": shareConfig.title
+        });
+    } else if (/(^| )QQ( |\/|$)/i.test(UA)) {
+        //手Q分享配置：（PS：这种方式在发给QQ好友时可能会失效，还是需要配置meta，且从微信发给QQ好友时meta也没救了……）
+        var QQscript = document.createElement('script');
+        QQscript.setAttribute('type', 'text/javascript');
+        QQscript.src = 'http://pub.idqqimg.com/qqmobile/qqapi.js';
+        window.addEventListener('load', function () {
+            document.body.appendChild(QQscript);
+        });
+        QQscript.onload = function () {
+            window.mqq && window.mqq.data && window.mqq.data.setShareInfo &&
+            window.mqq.data.setShareInfo({
                     "share_url": shareConfig.link,
                     "title": shareConfig.title,
                     "desc": shareConfig.desc,
                     "image_url": shareConfig.img_url
-                });
-
-            }
-
-            /**
-             * 手Q分享需要把以下的meta粘贴到页面头部
-             * */
-            //<meta name="description" itemprop="description" content="校园领袖招募ing，加入腾讯，成就梦想！">
-            //<meta itemprop="name" content="腾讯校园领袖招募">
-            //<meta itemprop="image" content="http://qzonestyle.gtimg.cn/qz-act/vip/20140623-school/img/weibo120.jpg">
-        }
-    }, 1000);
+                },
+                shareConfig.callback
+            );
+        };
+        /*
+         手Q分享meta格式：
+         <meta name="description" itemprop="description" content="分享标题"/>
+         <meta itemprop="name" content="分享简介"/>
+         <meta itemprop="image" content="分享预览图"/>
+         */
+    }
 })();
