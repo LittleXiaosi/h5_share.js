@@ -51,16 +51,24 @@
     } else if (/(^| )MicroMessenger( |\/|$)/i.test(UA)) {
         // 自定义微信分享内容
         function initWxShare(shareContent) {
+            var callback = window[shareContent.callback];
             var _share = function () {
+                //console.log('shareContent: %s\ntypeof(callback): %s', JSON.stringify(shareContent), typeof(callback));
                 try {
                     // 分享到朋友圈
                     WeixinJSBridge.on('menu:share:timeline', function (argv) {
                         WeixinJSBridge.invoke('shareTimeline', shareContent, function (res) {
+                            if (typeof(callback) == 'function') {
+                                callback(res);
+                            }
                         });
                     });
                     // 发送给好友
                     WeixinJSBridge.on('menu:share:appmessage', function (argv) {
                         WeixinJSBridge.invoke('sendAppMessage', shareContent, function (res) {
+                            if (typeof(callback) == 'function') {
+                                callback(res);
+                            }
                         });
                     });
                 } catch (e) {
@@ -86,7 +94,8 @@
             "img_height": 120,
             "link": shareConfig.link,
             "desc": shareConfig.desc,
-            "title": shareConfig.title
+            "title": shareConfig.title,
+            "callback": shareConfig.callback
         });
     } else if (/(^| )QQ( |\/|$)/i.test(UA)) {
         //手Q分享配置：（PS：这种方式在发给QQ好友时可能会失效，还是需要配置meta，且从微信发给QQ好友时meta也没救了……）
